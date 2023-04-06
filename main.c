@@ -184,8 +184,8 @@ int count_chains(Level *level) {
 
 	for (int i = 0; i < level->count; i++) {
 		for (int j = 0; j < level->value_lengths[i]; j++) {
-			if (level->values[i][j] > max_chain) {
-				max_chain = level->values[i][j];
+			if (level->values[i][j] == -1) {
+				max_chain++;
 			}
 		}
 	}
@@ -427,10 +427,12 @@ void play_game(CardinalChainsGame *game, Levels *levels, int grid_rows, int grid
 	while (true) {
 		print_game_grid(game, current_chain, active_chains);
 		input = get_user_input();
-		getchar();
+        getchar();
+        printf("\n");
 
 		if (input == 'Q') {
-			break;
+            printf("Thank you for playing, see you next time!\n");
+            exit(0);
 		}
 
 		Direction direction;
@@ -466,7 +468,7 @@ void play_game(CardinalChainsGame *game, Levels *levels, int grid_rows, int grid
 				current_chain = (current_chain + 1) % game->chain_count;
 				break;
 			default:
-				printf("Invalid input. Please try again.\n");
+				printf("Invalid input. Please try again.\n\n");
 				continue;
 		}
 
@@ -479,7 +481,7 @@ void play_game(CardinalChainsGame *game, Levels *levels, int grid_rows, int grid
 
 		if (moved && is_game_completed(game)) {
 			print_game_grid(game, current_chain, active_chains);
-			printf("Level completed!\n");
+			printf("\nLevel completed!\n\n");
 			game->current_level++;
 			if (game->current_level < levels->count) {
 				load_next_level(game, levels);
@@ -489,31 +491,6 @@ void play_game(CardinalChainsGame *game, Levels *levels, int grid_rows, int grid
 			}
 		}
 	}
-}
-
-void free_cardinal_chains_game(CardinalChainsGame *game) {
-	for (size_t i = 0; i < game->level.count; i++) {
-		free(game->level.values[i]);
-	}
-	free(game->level.values);
-	free(game->level.value_lengths);
-
-	for (int i = 0; i < game->chain_count; i++) {
-		free(game->chains[i]);
-	}
-	free(game->chains);
-	free(game->chain_lengths);
-}
-
-void free_levels(Levels *levels) {
-	for (size_t i = 0; i < levels->count; i++) {
-		for (size_t j = 0; j < levels->items[i].count; j++) {
-			free(levels->items[i].values[j]);
-		}
-		free(levels->items[i].values);
-		free(levels->items[i].value_lengths);
-	}
-	free(levels->items);
 }
 
 int main(int argc, char *argv[]) {
@@ -543,7 +520,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	printf("Welcome to Cardinal Chains!\n");
+	printf("Welcome to Cardinal Chains!\n\n");
 	CardinalChainsGame game = init_game(&levels.items[0], 0);
 
 	while (game.current_level < levels.count) {
@@ -555,11 +532,9 @@ int main(int argc, char *argv[]) {
 		} else if (game.current_level < levels.count) {
 			printf("\nCongratulations! You've completed the level. Moving on to the next level.\n");
 		} else {
-			printf("\nCongratulations! You've completed all levels. Thanks for playing!\n");
+			printf("Thanks for playing!\n");
 		}
 	}
 
-	free_cardinal_chains_game(&game);
-	free_levels(&levels);
 	return 0;
 }
