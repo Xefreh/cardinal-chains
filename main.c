@@ -487,6 +487,7 @@ void play_game(CardinalChainsGame *game, Levels *levels, int grid_rows, int grid
 //		}
 
 		if (moved && is_game_completed(game)) {
+			current_chain = 0;
 			print_game_grid(game, current_chain, active_chains);
 			printf("\nLevel completed!\n\n");
 			game->current_level++;
