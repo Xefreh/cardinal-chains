@@ -1,7 +1,4 @@
-# cardinal_chains
-puzzle game that challenges players to create sequences by connecting numbers while following specific rules
-
-# Project Description
+# Description
 Cardinal Chains is an open-source puzzle game that challenges players to create chains of increasing integers by connecting adjacent cells in a grid. The objective of the game is to form the longest possible chain, starting from the lowest number and ending with the highest number, while following specific game rules.
 
 # Installing and Running Cardinal Chains
