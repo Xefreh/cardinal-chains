@@ -7,6 +7,7 @@ import (
 	"cardinal-chains/game"
 	"cardinal-chains/gameloop"
 	"cardinal-chains/levelloader"
+	"cardinal-chains/logger"
 
 	"github.com/rivo/tview"
 )
@@ -14,6 +15,11 @@ import (
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <YAML file>\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	if err := logger.Init(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing logger: %v\n", err)
 		os.Exit(1)
 	}
 

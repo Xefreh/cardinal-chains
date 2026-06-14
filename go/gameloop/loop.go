@@ -7,6 +7,7 @@ import (
 	"cardinal-chains/game"
 	"cardinal-chains/input"
 	"cardinal-chains/level"
+	"cardinal-chains/logger"
 	"cardinal-chains/render"
 
 	"github.com/gdamore/tcell/v2"
@@ -113,12 +114,12 @@ func (gl *GameLoop) handleCommand(cmd input.Command) bool {
 		gl.game.RestartLevel()
 
 	case input.CycleChain:
-		if gl.game.ChainCount() > 0 {
+		if gl.game.ChainCount() > 1 {
 			gl.currentChain = (gl.currentChain + 1) % gl.game.ChainCount()
 		}
 
 	case input.Invalid:
-		// Ignore unrecognized keys.
+		logger.Debug.Println("invalid command")
 	}
 
 	gl.refresh()
