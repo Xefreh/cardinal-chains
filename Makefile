@@ -3,33 +3,27 @@ CFLAGS  ?= -Wall -Wextra
 LDFLAGS ?=
 LDLIBS  ?= -lyaml
 
-SRC      = main.c
-BIN      = cardinal_chains
-LEVELS   = levels.yml
-BUILD_DIR = build
-
-# Default build flags.
-DEFAULT_FLAGS = -O2
+SRCS    = $(wildcard src/*.c)
+BIN     = cardinal_chains
+LEVELS  = levels.yml
 
 .PHONY: all build debug release run clean install-deps help
 
 all: build
 
 # Standard optimized build.
-build: $(BIN)
-
-$(BIN): $(SRC)
-	$(CC) $(DEFAULT_FLAGS) $(CFLAGS) $(SRC) -o $(BIN) $(LDFLAGS) $(LDLIBS)
+build: $(SRCS)
+	$(CC) -O2 $(CFLAGS) $(SRCS) -o $(BIN) $(LDFLAGS) $(LDLIBS)
 
 # Debug build with symbols, kept separate from the default binary.
 debug: CFLAGS += -g -O0 -DDEBUG
-debug: $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o $(BIN) $(LDFLAGS) $(LDLIBS)
+debug: $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) -o $(BIN) $(LDFLAGS) $(LDLIBS)
 
 # Release build with full optimization.
 release: CFLAGS += -O3 -DNDEBUG
-release: $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o $(BIN) $(LDFLAGS) $(LDLIBS)
+release: $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) -o $(BIN) $(LDFLAGS) $(LDLIBS)
 
 # Build (if needed) and run the game against levels.yml.
 run: build

@@ -38,8 +38,35 @@ runtime with LibYAML.
 Chains are rendered with ANSI colors so a color-capable terminal is expected.
 
 ## Source layout
-- `main.c` — the entire game: YAML parsing, grid model, chain logic, input loop,
-  rendering, and memory cleanup.
+
+The project is split into focused modules under `src/`, each responsible for a
+single concern (single-responsibility principle):
+
+| Module | Files | Responsibility |
+| ------ | ----- | -------------- |
+| Level data model | `src/level.{h,c}` | `Level`/`Levels` structs and their lifecycle (`init_levels`, `add_level`, `free_levels`). No I/O. |
+| Level loader | `src/level_loader.{h,c}` | Parses `levels.yml` via LibYAML and populates a `Levels`. Depends on `level`. |
+| Game state & rules | `src/game.{h,c}` | `Position`, `Direction`, `CardinalChainsGame`; chain init, movement, cancellation, erase, restart, completion check, level advancement. Depends on `level`. |
+| Rendering | `src/render.{h,c}` | Draws the grid with ANSI chain colors. Depends on `game`. |
+| Input | `src/input.{h,c}` | Reads a single command character from the player. Standalone. |
+| Game loop (controller) | `src/game_loop.{h,c}` | Wires input → game rules → rendering each turn. Depends on `game`, `input`, `render`. |
+| Entry point | `src/main.c` | Argument parsing, level loading, top-level setup/teardown. |
+
+Module dependency graph (one direction per arrow, no cycles):
+
+```
+level          input (standalone)
+  ^              ^
+  |              |
+level_loader   game_loop ---> render
+  ^              ^              |
+  |              |              v
+  +------------- main <--- game <+
+                   |
+                (uses level + level_loader)
+```
+
+Top-level files:
 - `levels.yml` — the level data. Each top-level entry under `levels:` maps a
   level number to a list of rows; each row is a space-separated string of ints.
 - `Makefile` — the build system. Drives compilation, running, and cleanup.
@@ -92,7 +119,7 @@ The `Makefile` honors the standard `CC`, `CFLAGS`, `LDFLAGS` overrides, e.g.
 For a plain gcc invocation without make (equivalent to `make build`):
 
 ```
-gcc main.c -o cardinal_chains -lyaml
+gcc src/*.c -o cardinal_chains -lyaml
 ```
 
 ## Run
