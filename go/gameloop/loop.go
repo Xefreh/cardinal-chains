@@ -6,7 +6,6 @@ import (
 	"cardinal-chains/game"
 	"cardinal-chains/input"
 	"cardinal-chains/level"
-	"cardinal-chains/logger"
 	"cardinal-chains/render"
 
 	"github.com/gdamore/tcell/v2"
@@ -21,8 +20,10 @@ type GameLoop struct {
 	app           *tview.Application
 	gridView      *tview.TextView
 	gridContainer *tview.Flex
+	errorView     *tview.TextView
 	statusView    *tview.TextView
 	helpView      *tview.TextView
+	rootFlex      *tview.Flex
 	currentChain  int
 	activeChains  []int
 }
@@ -65,6 +66,14 @@ func (gl *GameLoop) setupUI() {
 		SetDynamicColors(true)
 	gl.statusView.SetBorder(true).SetTitle(" Status ").SetTitleAlign(tview.AlignLeft)
 
+	gl.errorView = tview.NewTextView().
+		SetDynamicColors(true).
+		SetTextAlign(tview.AlignCenter)
+	gl.errorView.SetBorder(true).
+		SetTitle(" Error ").
+		SetTitleAlign(tview.AlignLeft).
+		SetBorderColor(tcell.ColorRed)
+
 	gl.helpView = tview.NewTextView().
 		SetDynamicColors(true)
 	gl.helpView.SetBorder(true).SetTitle(" Commands ").SetTitleAlign(tview.AlignLeft)
@@ -75,11 +84,25 @@ func (gl *GameLoop) setupUI() {
 
 // Layout returns the root tview primitive for the game.
 func (gl *GameLoop) Layout() tview.Primitive {
-	flex := tview.NewFlex().SetDirection(tview.FlexRow).
+	gl.rootFlex = tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(gl.gridContainer, 0, 1, true).
+		AddItem(gl.errorView, 0, 0, false).
 		AddItem(gl.statusView, 4, 0, false).
 		AddItem(gl.helpView, 9, 0, false)
-	return flex
+	return gl.rootFlex
+}
+
+// showError displays an error message in the error bar by expanding its
+// height from 0 (hidden) to 3 rows.
+func (gl *GameLoop) showError(msg string) {
+	gl.errorView.SetText(msg)
+	gl.rootFlex.ResizeItem(gl.errorView, 3, 0)
+}
+
+// clearError hides the error bar by collapsing its height back to 0.
+func (gl *GameLoop) clearError() {
+	gl.errorView.Clear()
+	gl.rootFlex.ResizeItem(gl.errorView, 0, 0)
 }
 
 // refresh re-renders the grid and status panels in place, replacing the
@@ -98,6 +121,13 @@ func (gl *GameLoop) showLevelComplete() {
 // Returns true if the application should continue running, false if it
 // should quit.
 func (gl *GameLoop) handleCommand(cmd input.Command) bool {
+	if cmd == input.Invalid {
+		gl.showError("[red::b]You pressed an invalid key![-:]")
+		return true
+	}
+
+	gl.clearError()
+
 	switch cmd {
 	case input.Quit:
 		gl.app.Stop()
@@ -123,9 +153,6 @@ func (gl *GameLoop) handleCommand(cmd input.Command) bool {
 		if gl.game.ChainCount() > 1 {
 			gl.currentChain = (gl.currentChain + 1) % gl.game.ChainCount()
 		}
-
-	case input.Invalid:
-		logger.Debug.Println("invalid command")
 	}
 
 	gl.refresh()
@@ -183,19 +210,15 @@ func dirFromCommand(cmd input.Command) game.Direction {
 }
 
 // HandleKey is the input capture callback for tview. It converts the key
-// event into a command and processes it.
+// event into a command and processes it. Non-rune keys (arrows, function
+// keys, etc.) are silently ignored.
 func (gl *GameLoop) HandleKey(event *tcell.EventKey) *tcell.EventKey {
 	ch := event.Rune()
 	if ch == 0 {
 		return event
 	}
 
-	cmd := input.ParseChar(ch)
-	if cmd == input.Invalid {
-		return event
-	}
-
-	gl.handleCommand(cmd)
+	gl.handleCommand(input.ParseChar(ch))
 	return nil
 }
 
