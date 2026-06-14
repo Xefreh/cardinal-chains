@@ -54,21 +54,29 @@ int count_chains(Level *level) {
 CardinalChainsGame init_game(Level *level, int current_level) {
     CardinalChainsGame game;
     game.level = *level;
-    game.chain_count = count_chains(level);
-    game.chains = malloc(game.chain_count * sizeof(Position *));
-    game.chain_lengths = malloc(game.chain_count * sizeof(int));
+    game.chain_count = 0;
+    game.chains = NULL;
+    game.chain_lengths = NULL;
     game.is_game_over = false;
     game.current_level = current_level;
     init_chains(&game);
     return game;
 }
 
-void free_game(CardinalChainsGame *game) {
+static void free_chains(CardinalChainsGame *game) {
     for (int i = 0; i < game->chain_count; i++) {
         free(game->chains[i]);
     }
     free(game->chains);
     free(game->chain_lengths);
+
+    game->chains = NULL;
+    game->chain_lengths = NULL;
+    game->chain_count = 0;
+}
+
+void free_game(CardinalChainsGame *game) {
+    free_chains(game);
 }
 
 bool move_chain(CardinalChainsGame *game, int chain_index, Direction direction,
@@ -192,6 +200,7 @@ void load_next_level(CardinalChainsGame *game, Levels *levels) {
         game->is_game_over = true;
         return;
     }
+    free_chains(game);
     game->level = levels->items[game->current_level];
     init_chains(game);
 }
