@@ -1,7 +1,6 @@
 package gameloop
 
 import (
-	"fmt"
 	"strings"
 
 	"cardinal-chains/game"
@@ -17,14 +16,15 @@ import (
 // GameLoop is the controller that wires input → game rules → rendering
 // each turn, mirroring the C game_loop.c play_game() function.
 type GameLoop struct {
-	game         *game.Game
-	levels       *level.Levels
-	app          *tview.Application
-	gridView     *tview.TextView
-	statusView   *tview.TextView
-	helpView     *tview.TextView
-	currentChain int
-	activeChains []int
+	game          *game.Game
+	levels        *level.Levels
+	app           *tview.Application
+	gridView      *tview.TextView
+	gridContainer *tview.Flex
+	statusView    *tview.TextView
+	helpView      *tview.TextView
+	currentChain  int
+	activeChains  []int
 }
 
 // NewGameLoop creates a new game loop controller with the given game state,
@@ -51,16 +51,22 @@ func (gl *GameLoop) setupUI() {
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
 		SetWrap(false)
-	gl.gridView.SetBorder(true).SetTitle(" Cardinal Chains ").SetTitleAlign(tview.AlignLeft)
+
+	gridRows := gl.game.Level.Rows()
+	gl.gridContainer = tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(nil, 0, 1, false).
+		AddItem(gl.gridView, gridRows, 0, true).
+		AddItem(nil, 0, 1, false)
+	gl.gridContainer.SetBorder(true).
+		SetTitle(" Cardinal Chains ").
+		SetTitleAlign(tview.AlignLeft)
 
 	gl.statusView = tview.NewTextView().
-		SetDynamicColors(true).
-		SetTextAlign(tview.AlignLeft)
+		SetDynamicColors(true)
 	gl.statusView.SetBorder(true).SetTitle(" Status ").SetTitleAlign(tview.AlignLeft)
 
 	gl.helpView = tview.NewTextView().
-		SetDynamicColors(true).
-		SetTextAlign(tview.AlignLeft)
+		SetDynamicColors(true)
 	gl.helpView.SetBorder(true).SetTitle(" Commands ").SetTitleAlign(tview.AlignLeft)
 	gl.helpView.SetText(render.HelpString())
 
@@ -70,22 +76,22 @@ func (gl *GameLoop) setupUI() {
 // Layout returns the root tview primitive for the game.
 func (gl *GameLoop) Layout() tview.Primitive {
 	flex := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(gl.gridView, 0, 1, true).
+		AddItem(gl.gridContainer, 0, 1, true).
 		AddItem(gl.statusView, 4, 0, false).
-		AddItem(gl.helpView, 8, 0, false)
+		AddItem(gl.helpView, 9, 0, false)
 	return flex
 }
 
-// refresh re-renders the grid and status panels from the current game state.
+// refresh re-renders the grid and status panels in place, replacing the
+// existing content rather than appending.
 func (gl *GameLoop) refresh() {
-	fmt.Fprintf(gl.gridView, "%s", render.GridString(gl.game, gl.currentChain, gl.activeChains))
-	fmt.Fprintf(gl.statusView, "%s", render.StatusString(gl.game, gl.currentChain, gl.activeChains))
+	gl.gridView.SetText(render.GridString(gl.game, gl.currentChain, gl.activeChains))
+	gl.statusView.SetText(render.StatusString(gl.game, gl.currentChain, gl.activeChains))
 }
 
 // showLevelComplete displays the level completion overlay.
 func (gl *GameLoop) showLevelComplete() {
-	gl.statusView.Clear()
-	fmt.Fprintf(gl.statusView, "\n[green::b]Level completed![white:-:-]\n")
+	gl.statusView.SetText("\n[green::b]Level completed![white:-:-]")
 }
 
 // handleCommand processes a parsed command against the game state.
@@ -139,6 +145,8 @@ func (gl *GameLoop) advanceLevel() bool {
 		for i := range gl.activeChains {
 			gl.activeChains[i] = i
 		}
+		// Keep the centered grid sized to the new level's row count.
+		gl.gridContainer.ResizeItem(gl.gridView, gl.game.Level.Rows(), 0)
 		gl.refresh()
 		return true
 	}
@@ -149,13 +157,13 @@ func (gl *GameLoop) advanceLevel() bool {
 
 // allLevelsComplete shows the congratulations message and stops the app.
 func (gl *GameLoop) allLevelsComplete() {
-	gl.gridView.Clear()
 	msg := strings.Join([]string{
 		"",
 		"[green::b]Congratulations!",
 		"You have completed all levels![white:-:-]",
+		"",
 	}, "\n")
-	fmt.Fprintf(gl.gridView, "%s\n", msg)
+	gl.gridView.SetText(msg)
 }
 
 // dirFromCommand maps a movement command to a game.Direction.
