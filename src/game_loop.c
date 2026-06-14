@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "input.h"
 #include "render.h"
@@ -24,7 +25,7 @@ void play_game(CardinalChainsGame *game, Levels *levels, int grid_rows,
         getchar();
         printf("\n");
 
-        if (input == 'Q') {
+        if (toupper(input) == 'Q') {
             printf("Thank you for playing, see you next time!\n");
             exit(0);
         }
@@ -32,7 +33,7 @@ void play_game(CardinalChainsGame *game, Levels *levels, int grid_rows,
         Direction direction;
         bool moved = false;
 
-        switch (input) {
+        switch (toupper(input)) {
             case 'N':
                 direction = NORTH;
                 moved = move_chain(game, current_chain, direction, grid_rows,
