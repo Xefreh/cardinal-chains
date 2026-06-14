@@ -42,41 +42,69 @@ Chains are rendered with ANSI colors so a color-capable terminal is expected.
   rendering, and memory cleanup.
 - `levels.yml` — the level data. Each top-level entry under `levels:` maps a
   level number to a list of rows; each row is a space-separated string of ints.
-- `CMakeLists.txt` — alternative CMake build. Note that it defines an
-  `INPUT_FILE` macro and copies `levels.yml` into the build dir, but the
-  current `main.c` reads the path from `argv[1]` instead, so that macro is
-  effectively unused.
+- `Makefile` — the build system. Drives compilation, running, and cleanup.
+- `scripts/install-deps.sh` — detects the system package manager and installs
+  libyaml and any other build/runtime dependencies.
 
-## Build with gcc
+## Dependencies
 
-The only external dependency is LibYAML (`libyaml-dev` / `yaml.h`). On Debian/
-Ubuntu install it with:
+The only external dependency is LibYAML (`libyaml-dev` / `yaml.h`).
+
+## Install dependencies
+
+The install script auto-detects the system package manager (`apt-get`, `dnf`,
+`yum`, `pacman`, `zypper`, `apk`, `brew`) and installs the right libyaml
+package. It re-execs itself under `sudo` if not root:
+
+```
+make install-deps
+# or directly:
+./scripts/install-deps.sh
+```
+
+To install manually on Debian/Ubuntu:
 
 ```
 sudo apt-get install -y libyaml-dev
 ```
 
-Compile directly with gcc (this is the recommended workflow for this project):
+## Build
+
+The project uses a Makefile as its build system (CMake is no longer used).
+`make` / `make build` produces an optimized `cardinal_chains` binary using gcc
+and `-lyaml`:
+
+```
+make            # == make build
+```
+
+Other build targets:
+
+```
+make debug      # -g -O0 -Wall -Wextra -DDEBUG
+make release    # -O3 -DNDEBUG
+make help       # list all available targets
+```
+
+The `Makefile` honors the standard `CC`, `CFLAGS`, `LDFLAGS` overrides, e.g.
+`make CC=clang CFLAGS="-Wall -Wextra"`.
+
+For a plain gcc invocation without make (equivalent to `make build`):
 
 ```
 gcc main.c -o cardinal_chains -lyaml
 ```
 
-For a debug build with warnings and symbols:
-
-```
-gcc -Wall -Wextra -g main.c -o cardinal_chains -lyaml
-```
-
-For an optimized release build:
-
-```
-gcc -O2 main.c -o cardinal_chains -lyaml
-```
-
 ## Run
 
-The binary expects the path to the YAML levels file as its first argument:
+`make run` builds (if needed) and runs the game against `levels.yml`:
+
+```
+make run
+```
+
+The binary also expects the path to the YAML levels file as its first argument,
+so it can be invoked directly:
 
 ```
 ./cardinal_chains levels.yml
@@ -85,18 +113,12 @@ The binary expects the path to the YAML levels file as its first argument:
 If no argument is given the program prints `Usage: <binary> <YAML file>` and
 exits with status 1.
 
-## Build with CMake (alternative)
+## Other targets
 
 ```
-mkdir build && cd build
-cmake ..
-make
-./cardinal_chains ../levels.yml
+make clean        # remove the compiled binary
+make install-deps # install libyaml via scripts/install-deps.sh
 ```
-
-Note: the CMake target also accepts the YAML path as `argv[1]`; run it from the
-`build/` directory and point it at `../levels.yml` (or the copied
-`levels.yml`).
 
 ## Verification
 
@@ -105,5 +127,6 @@ works by running it against the bundled level file and confirming the grid is
 rendered and input is accepted:
 
 ```
-./cardinal_chains levels.yml
+make run
+# or: ./cardinal_chains levels.yml
 ```
